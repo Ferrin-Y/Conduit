@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from app.config import settings
 
@@ -22,4 +22,6 @@ def ingest_document(payload: dict):
 
 @app.get("/documents/{doc_id}")
 def get_document(doc_id: int):
+    if doc_id not in _documents:
+        raise HTTPException(status_code=404, detail="document not found")
     return _documents[doc_id]
