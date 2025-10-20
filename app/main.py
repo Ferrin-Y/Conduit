@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.db.session import get_session
+from app.models import Document
 
 app = FastAPI(title="Conduit")
-
-# quick in-memory stub so we can poke the endpoint before the db is wired up
-_documents = {}
 
 
 @app.get("/health")
@@ -14,14 +14,20 @@ def health():
 
 
 @app.post("/documents")
-def ingest_document(payload: dict):
-    doc_id = len(_documents) + 1
-    _documents[doc_id] = payload
-    return {"id": doc_id, "status": "received"}
+async def ingest_document(payload: dict, session: AsyncSession = Depends(get_session)):
+    document = Document(title=payload["title"], content=payload["content"])
+    session.add(document)
+    await session.commit()
+    return {"id": document.id, "status": "received"}
 
 
 @app.get("/documents/{doc_id}")
-def get_document(doc_id: int):
-    if doc_id not in _documents:
+async def get_document(doc_id: int, session: AsyncSession = Depends(get_session)):
+    document = await session.get(Document, doc_id)
+    if document is None:
         raise HTTPException(status_code=404, detail="document not found")
-    return _documents[doc_id]
+    return {
+        "id": document.id,
+        "title": document.title,
+        "status": document.status,
+    }
