@@ -4,8 +4,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.session import get_session
 from app.models import Document
+from app.workers.queue import job_queue
 
 app = FastAPI(title="Conduit")
+
+
+@app.on_event("startup")
+async def start_worker_queue():
+    await job_queue.start()
+
+
+@app.on_event("shutdown")
+async def stop_worker_queue():
+    await job_queue.stop()
 
 
 @app.get("/health")
