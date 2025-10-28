@@ -5,6 +5,7 @@ from app.config import settings
 from app.db.session import get_session
 from app.models import Document
 from app.workers.queue import job_queue
+from app.workers.tasks import process_document
 
 app = FastAPI(title="Conduit")
 
@@ -29,6 +30,9 @@ async def ingest_document(payload: dict, session: AsyncSession = Depends(get_ses
     document = Document(title=payload["title"], content=payload["content"])
     session.add(document)
     await session.commit()
+
+    await job_queue.enqueue(lambda: process_document(document.id))
+
     return {"id": document.id, "status": "received"}
 
 

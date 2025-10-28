@@ -1,3 +1,3 @@
-from app.models.document import Chunk, Document
+from app.models.document import Chunk, Document, DocumentStatus
 
-__all__ = ["Document", "Chunk"]
+__all__ = ["Document", "Chunk", "DocumentStatus"]
