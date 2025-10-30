@@ -1,5 +1,8 @@
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
+
+logger = logging.getLogger(__name__)
 
 Job = Callable[[], Awaitable[None]]
 
@@ -25,7 +28,11 @@ class JobQueue:
     async def _worker_loop(self):
         while True:
             job = await self._queue.get()
-            await job()
+            try:
+                await job()
+            except Exception:
+                # a job blowing up shouldn't kill the whole worker
+                logger.exception("job failed")
 
 
 job_queue = JobQueue()

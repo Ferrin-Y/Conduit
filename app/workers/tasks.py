@@ -11,14 +11,20 @@ async def process_document(document_id: int):
         document.status = DocumentStatus.processing
         await session.commit()
 
-        existing = await session.scalars(
-            select(Chunk).where(Chunk.document_id == document_id)
-        )
-        for chunk in existing:
-            await session.delete(chunk)
+        try:
+            existing = await session.scalars(
+                select(Chunk).where(Chunk.document_id == document_id)
+            )
+            for chunk in existing:
+                await session.delete(chunk)
 
-        pieces = chunk_text(document.content)
-        for i, piece in enumerate(pieces):
-            session.add(Chunk(document_id=document_id, index=i, text=piece))
+            pieces = chunk_text(document.content)
+            for i, piece in enumerate(pieces):
+                session.add(Chunk(document_id=document_id, index=i, text=piece))
 
-        await session.commit()
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            document.status = DocumentStatus.failed
+            await session.commit()
+            raise
