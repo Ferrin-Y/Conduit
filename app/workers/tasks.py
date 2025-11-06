@@ -3,24 +3,12 @@ from sqlalchemy import select
 from app.db.session import async_session
 from app.ingestion.chunking import chunk_text
 from app.models import Chunk, Document, DocumentStatus
+from app.vectorstore import get_vector_store
 from app.vectorstore.base import VectorStore
-
-_vector_store: VectorStore | None = None
-
-
-def _get_vector_store() -> VectorStore:
-    # imported lazily: chromadb is a heavy optional dep and we don't want
-    # a broken/missing build of it to block app startup or unrelated tests
-    global _vector_store
-    if _vector_store is None:
-        from app.vectorstore.chroma_store import ChromaVectorStore
-
-        _vector_store = ChromaVectorStore()
-    return _vector_store
 
 
 async def process_document(document_id: int, vector_store: VectorStore | None = None):
-    store = vector_store or _get_vector_store()
+    store = vector_store or get_vector_store()
     async with async_session() as session:
         document = await session.get(Document, document_id)
         document.status = DocumentStatus.processing
