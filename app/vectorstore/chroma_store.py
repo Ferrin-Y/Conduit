@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import chromadb
 
 from app.config import settings
@@ -8,7 +10,13 @@ COLLECTION_NAME = "conduit_chunks"
 
 class ChromaVectorStore(VectorStore):
     def __init__(self):
-        self._client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+        # relative paths got resolved against whatever the cwd happened to be
+        # at process start, so a restart from a different cwd silently opened
+        # a fresh (empty) store instead of the one we'd been writing to
+        persist_dir = Path(settings.chroma_persist_dir).resolve()
+        persist_dir.mkdir(parents=True, exist_ok=True)
+
+        self._client = chromadb.PersistentClient(path=str(persist_dir))
         self._collection = self._client.get_or_create_collection(COLLECTION_NAME)
 
     def add(self, ids: list[str], texts: list[str], metadatas: list[dict]) -> None:
