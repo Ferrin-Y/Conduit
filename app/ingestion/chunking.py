@@ -1,9 +1,11 @@
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50  # TODO: tune this, picked semi-arbitrarily
+from app.config import settings
 
 
-def chunk_text(text: str) -> list[str]:
+def chunk_text(text: str, chunk_size: int | None = None, overlap: int | None = None) -> list[str]:
     if not text:
         return []
-    step = CHUNK_SIZE - CHUNK_OVERLAP
-    return [text[i : i + CHUNK_SIZE] for i in range(0, len(text), step)]
+
+    size = chunk_size if chunk_size is not None else settings.chunk_size
+    step = size - (overlap if overlap is not None else settings.chunk_overlap)
+
+    return [text[i : i + size] for i in range(0, len(text), step)]

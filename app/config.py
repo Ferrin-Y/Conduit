@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite+aiosqlite:///./conduit.db"
     chroma_persist_dir: str = "./chroma_data"
+    chunk_size: int = 500
+    chunk_overlap: int = 50
 
 
 settings = Settings()
