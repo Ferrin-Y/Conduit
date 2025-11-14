@@ -1,8 +1,9 @@
 from sqlalchemy import select
 
+from app.db.repository import get_document, replace_chunks, set_document_status
 from app.db.session import async_session
 from app.ingestion.chunking import chunk_text
-from app.models import Chunk, Document, DocumentStatus
+from app.models import Chunk, DocumentStatus
 from app.vectorstore import get_vector_store
 from app.vectorstore.base import VectorStore
 
@@ -10,28 +11,20 @@ from app.vectorstore.base import VectorStore
 async def process_document(document_id: int, vector_store: VectorStore | None = None):
     store = vector_store or get_vector_store()
     async with async_session() as session:
-        document = await session.get(Document, document_id)
-        document.status = DocumentStatus.processing
-        await session.commit()
+        document = await get_document(session, document_id)
+        await set_document_status(session, document, DocumentStatus.processing)
 
         try:
-            existing = list(
+            old_chunk_ids = list(
                 await session.scalars(
-                    select(Chunk).where(Chunk.document_id == document_id)
+                    select(Chunk.id).where(Chunk.document_id == document_id)
                 )
             )
-            if existing:
-                store.delete([str(chunk.id) for chunk in existing])
-            for chunk in existing:
-                await session.delete(chunk)
+            if old_chunk_ids:
+                store.delete([str(chunk_id) for chunk_id in old_chunk_ids])
 
             pieces = chunk_text(document.content)
-            new_chunks = [
-                Chunk(document_id=document_id, index=i, text=piece)
-                for i, piece in enumerate(pieces)
-            ]
-            session.add_all(new_chunks)
-            await session.flush()  # assign ids before we embed
+            new_chunks = await replace_chunks(session, document_id, pieces)
 
             for chunk in new_chunks:
                 chunk.vector_id = str(chunk.id)
@@ -47,10 +40,8 @@ async def process_document(document_id: int, vector_store: VectorStore | None = 
                     ],
                 )
 
-            document.status = DocumentStatus.indexed
-            await session.commit()
+            await set_document_status(session, document, DocumentStatus.indexed)
         except Exception:
             await session.rollback()
-            document.status = DocumentStatus.failed
-            await session.commit()
+            await set_document_status(session, document, DocumentStatus.failed)
             raise

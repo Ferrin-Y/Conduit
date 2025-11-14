@@ -2,8 +2,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.db.repository import create_document, get_document as fetch_document
 from app.db.session import get_session
-from app.models import Document
 from app.schemas import DocumentCreate, DocumentRead, QueryRequest, QueryResponse, QueryResult
 from app.vectorstore import get_vector_store
 from app.workers.queue import job_queue
@@ -29,9 +29,7 @@ def health():
 
 @app.post("/documents", response_model=DocumentRead)
 async def ingest_document(payload: DocumentCreate, session: AsyncSession = Depends(get_session)):
-    document = Document(title=payload.title, content=payload.content)
-    session.add(document)
-    await session.commit()
+    document = await create_document(session, payload.title, payload.content)
 
     await job_queue.enqueue(lambda: process_document(document.id))
 
@@ -40,7 +38,7 @@ async def ingest_document(payload: DocumentCreate, session: AsyncSession = Depen
 
 @app.get("/documents/{doc_id}", response_model=DocumentRead)
 async def get_document(doc_id: int, session: AsyncSession = Depends(get_session)):
-    document = await session.get(Document, doc_id)
+    document = await fetch_document(session, doc_id)
     if document is None:
         raise HTTPException(status_code=404, detail="document not found")
     return document
