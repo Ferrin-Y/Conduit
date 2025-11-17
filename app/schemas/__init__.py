@@ -2,8 +2,8 @@ from app.schemas.document import (
     DocumentCreate,
     DocumentRead,
     QueryRequest,
-    QueryResult,
     QueryResponse,
+    QueryResult,
 )
 
 __all__ = [

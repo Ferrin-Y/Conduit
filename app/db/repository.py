@@ -22,9 +22,7 @@ async def set_document_status(
     await session.commit()
 
 
-async def replace_chunks(
-    session: AsyncSession, document_id: int, texts: list[str]
-) -> list[Chunk]:
+async def replace_chunks(session: AsyncSession, document_id: int, texts: list[str]) -> list[Chunk]:
     existing = await session.scalars(select(Chunk).where(Chunk.document_id == document_id))
     for chunk in existing:
         await session.delete(chunk)

@@ -6,7 +6,7 @@ class FakeVectorStore(VectorStore):
         self.records: dict[str, dict] = {}
 
     def add(self, ids, texts, metadatas):
-        for vector_id, text, metadata in zip(ids, texts, metadatas):
+        for vector_id, text, metadata in zip(ids, texts, metadatas, strict=True):
             self.records[vector_id] = {"text": text, "metadata": metadata}
 
     def query(self, text: str, top_k: int = 5) -> list[SearchResult]:

@@ -14,9 +14,7 @@ class JobQueue:
         self._workers: list[asyncio.Task] = []
 
     async def start(self):
-        self._workers = [
-            asyncio.create_task(self._worker_loop()) for _ in range(self._num_workers)
-        ]
+        self._workers = [asyncio.create_task(self._worker_loop()) for _ in range(self._num_workers)]
 
     async def stop(self):
         for worker in self._workers:

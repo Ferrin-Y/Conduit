@@ -2,7 +2,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db.repository import create_document, get_document as fetch_document
+from app.db.repository import create_document
+from app.db.repository import get_document as fetch_document
 from app.db.session import get_session
 from app.schemas import DocumentCreate, DocumentRead, QueryRequest, QueryResponse, QueryResult
 from app.vectorstore import get_vector_store

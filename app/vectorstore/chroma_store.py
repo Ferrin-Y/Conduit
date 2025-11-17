@@ -30,11 +30,10 @@ class ChromaVectorStore(VectorStore):
             results["documents"][0],
             results["distances"][0],
             results["metadatas"][0],
+            strict=True,
         ):
             out.append(
-                SearchResult(
-                    vector_id=vector_id, text=doc, distance=distance, metadata=metadata
-                )
+                SearchResult(vector_id=vector_id, text=doc, distance=distance, metadata=metadata)
             )
         return out
 

@@ -16,9 +16,7 @@ async def process_document(document_id: int, vector_store: VectorStore | None = 
 
         try:
             old_chunk_ids = list(
-                await session.scalars(
-                    select(Chunk.id).where(Chunk.document_id == document_id)
-                )
+                await session.scalars(select(Chunk.id).where(Chunk.document_id == document_id))
             )
             if old_chunk_ids:
                 store.delete([str(chunk_id) for chunk_id in old_chunk_ids])
