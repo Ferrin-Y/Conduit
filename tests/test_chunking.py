@@ -23,3 +23,10 @@ def test_chunk_text_short_input_single_chunk():
 
 def test_chunk_text_empty_input():
     assert chunk_text("") == []
+
+
+def test_chunk_text_overlap_gte_size_does_not_lose_the_document():
+    text = "a" * 100
+    chunks = chunk_text(text, chunk_size=50, overlap=50)
+    assert len(chunks) > 0
+    assert "".join(chunks).count("a") >= 100
