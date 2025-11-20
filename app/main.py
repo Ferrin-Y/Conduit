@@ -5,6 +5,7 @@ from app.config import settings
 from app.db.repository import create_document
 from app.db.repository import get_document as fetch_document
 from app.db.session import get_session
+from app.ingestion.fetch import close_http_client, fetch_url_text
 from app.schemas import DocumentCreate, DocumentRead, QueryRequest, QueryResponse, QueryResult
 from app.vectorstore import get_vector_store
 from app.workers.queue import job_queue
@@ -21,6 +22,7 @@ async def start_worker_queue():
 @app.on_event("shutdown")
 async def stop_worker_queue():
     await job_queue.stop()
+    await close_http_client()
 
 
 @app.get("/health")
@@ -30,7 +32,11 @@ def health():
 
 @app.post("/documents", response_model=DocumentRead)
 async def ingest_document(payload: DocumentCreate, session: AsyncSession = Depends(get_session)):
-    document = await create_document(session, payload.title, payload.content)
+    content = payload.content
+    if content is None:
+        content = await fetch_url_text(payload.source_url)
+
+    document = await create_document(session, payload.title, content)
 
     await job_queue.enqueue(lambda: process_document(document.id))
 

@@ -30,3 +30,24 @@ async def test_ingest_document_rejects_empty_title(client):
 async def test_ingest_document_rejects_unknown_fields(client):
     r = await client.post("/documents", json={"title": "t", "content": "x", "unexpected": "nope"})
     assert r.status_code == 422
+
+
+async def test_ingest_document_rejects_both_content_and_url(client):
+    r = await client.post(
+        "/documents",
+        json={"title": "t", "content": "x", "source_url": "https://example.com/doc.txt"},
+    )
+    assert r.status_code == 422
+
+
+async def test_ingest_document_fetches_from_url(client, monkeypatch):
+    async def fake_fetch(url):
+        assert url == "https://example.com/doc.txt"
+        return "fetched content " * 10
+
+    monkeypatch.setattr("app.main.fetch_url_text", fake_fetch)
+
+    r = await client.post(
+        "/documents", json={"title": "t", "source_url": "https://example.com/doc.txt"}
+    )
+    assert r.status_code == 200

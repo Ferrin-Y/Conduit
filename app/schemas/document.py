@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models import DocumentStatus
 
@@ -7,7 +7,16 @@ class DocumentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = Field(min_length=1, max_length=255)
-    content: str = Field(min_length=1)
+    content: str | None = Field(default=None, min_length=1)
+    source_url: str | None = None
+
+    @model_validator(mode="after")
+    def require_content_or_url(self):
+        if not self.content and not self.source_url:
+            raise ValueError("either content or source_url is required")
+        if self.content and self.source_url:
+            raise ValueError("provide content or source_url, not both")
+        return self
 
 
 class DocumentRead(BaseModel):
