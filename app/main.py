@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,18 +13,16 @@ from app.vectorstore import get_vector_store
 from app.workers.queue import job_queue
 from app.workers.tasks import process_document
 
-app = FastAPI(title="Conduit")
 
-
-@app.on_event("startup")
-async def start_worker_queue():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     await job_queue.start()
-
-
-@app.on_event("shutdown")
-async def stop_worker_queue():
+    yield
     await job_queue.stop()
     await close_http_client()
+
+
+app = FastAPI(title="Conduit", lifespan=lifespan)
 
 
 @app.get("/health")
